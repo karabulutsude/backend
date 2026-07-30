@@ -6,8 +6,9 @@ import com.jollifiy.gameanalytics.entity.Player;
 import com.jollifiy.gameanalytics.service.PlayerService;
 import org.springframework.web.bind.annotation.*;
 
-@RestController  // Spring'e bu sınıfın HTTP isteklerini karşılayacağını söylüyoruz
-@RequestMapping("/player") // Bütün istekler "localhost:8080/player" ile başlayacak
+@RestController
+@CrossOrigin(origins = "*")
+@RequestMapping("/player")
 public class PlayerController {
 
     private final PlayerService playerService;
@@ -16,10 +17,8 @@ public class PlayerController {
         this.playerService = playerService;
     }
 
-    @PostMapping("/login") // Endpoint: http://localhost:8080/player/login
+    @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
-
-        // Unity'den gelen deviceId ve country verisini Service'e aktarıyoruz
         Player player = playerService.login(request.getDeviceId(), request.getCountry());
 
         LoginResponse response = new LoginResponse();

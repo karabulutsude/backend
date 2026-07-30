@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/progress")
 public class ProgressController {
 
@@ -16,7 +17,6 @@ public class ProgressController {
         this.progressService = progressService;
     }
 
-    // 1. Profil ekranı için progress verisini çeken endpoint: /progress/get?playerId=...
     @GetMapping("/get")
     public ResponseEntity<Progress> getProgress(@RequestParam String playerId) {
         Progress progress = progressService.getProgressByPlayerId(playerId);
@@ -26,7 +26,6 @@ public class ProgressController {
         return ResponseEntity.notFound().build();
     }
 
-    // 2. Oyundan çıkışta veya level geçildiğinde skor/coin kaydeden endpoint: /progress/save
     @PostMapping("/save")
     public ResponseEntity<Progress> saveProgress(@RequestBody ProgressSaveRequest request) {
         Progress savedProgress = progressService.saveProgress(request);

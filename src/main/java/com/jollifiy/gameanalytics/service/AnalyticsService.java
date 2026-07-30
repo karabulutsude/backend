@@ -1,32 +1,3 @@
-/*
-package com.jollifiy.gameanalytics.service;
-
-import com.jollifiy.gameanalytics.entity.Analytics;
-import com.jollifiy.gameanalytics.repository.AnalyticsRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class AnalyticsService {
-
-    private final AnalyticsRepository analyticsRepository;
-
-    public AnalyticsService(AnalyticsRepository analyticsRepository) {
-        this.analyticsRepository = analyticsRepository;
-    }
-
-    public Analytics saveEvent(Analytics analytics) {
-        return analyticsRepository.save(analytics);
-    }
-
-    public List<Analytics> getAllEvents() {
-        return analyticsRepository.findAll();
-    }
-}
-
- */
-
 package com.jollifiy.gameanalytics.service;
 
 import com.jollifiy.gameanalytics.dto.AnalyticsRequest;
@@ -46,7 +17,6 @@ public class AnalyticsService {
         this.analyticsRepository = analyticsRepository;
     }
 
-    // Metot artık AnalyticsRequest (DTO) alıyor ve Entity'ye dönüştürüp kaydediyor
     public Analytics saveEvent(AnalyticsRequest request) {
         Analytics analytics = new Analytics();
         analytics.setPlayerId(request.getPlayerId());

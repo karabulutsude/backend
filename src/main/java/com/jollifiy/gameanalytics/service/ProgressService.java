@@ -17,49 +17,42 @@ public class ProgressService {
         this.progressRepository = progressRepository;
     }
 
-    // 1. İlerleme Kaydetme / Güncelleme Metodu
     public Progress saveProgress(ProgressSaveRequest request) {
-
-        Optional<Progress> existingProgress =
-                progressRepository.findByPlayerId(request.getPlayerId());
+        Optional<Progress> existingProgress = progressRepository.findByPlayerId(request.getPlayerId());
 
         Progress progress;
-
-        // Maksimum level sınırımız 3
         int maxLevel = 3;
+
+        // NullPointerException riskine karşı güvenli coin okuma
+        int incomingCoins = (request.getTotalCoins() != null) ? request.getTotalCoins() : 0;
+        int incomingLevel = (request.getCurrentLevel() != null) ? request.getCurrentLevel() : 1;
 
         if (existingProgress.isPresent()) {
             progress = existingProgress.get();
 
-            // Level Güncellemesi (Gelen level maxLevel'ı geçemez)
-            if (request.getCurrentLevel() > progress.getCurrentLevel()) {
-                int newLevel = Math.min(request.getCurrentLevel(), maxLevel);
+            if (incomingLevel > progress.getCurrentLevel()) {
+                int newLevel = Math.min(incomingLevel, maxLevel);
                 progress.setCurrentLevel(newLevel);
             }
 
-            // Kümülatif Toplam Coin
             int currentCoinsInDb = (progress.getTotalCoins() != null) ? progress.getTotalCoins() : 0;
-            progress.setTotalCoins(currentCoinsInDb + request.getTotalCoins());
+            progress.setTotalCoins(currentCoinsInDb + incomingCoins);
 
         } else {
-            // İlk Defa İlerleme Kaydedilen Oyuncu
             progress = new Progress();
             progress.setPlayerId(request.getPlayerId());
 
-            // İlk kayıtta da max level kontrolü yapalım
-            int initialLevel = Math.min(request.getCurrentLevel(), maxLevel);
+            int initialLevel = Math.min(incomingLevel, maxLevel);
             progress.setCurrentLevel(initialLevel);
 
-            progress.setTotalCoins(request.getTotalCoins());
+            progress.setTotalCoins(incomingCoins);
         }
 
-        // Zamanı güncelliyoruz
         progress.setUpdatedAt(LocalDateTime.now());
 
         return progressRepository.save(progress);
     }
 
-    // 2. YENİ EKLENEN METOT: Unity'nin profil ekranı için veri çektiği metot
     public Progress getProgressByPlayerId(String playerId) {
         return progressRepository.findByPlayerId(playerId).orElse(null);
     }
