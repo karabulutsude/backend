@@ -3,11 +3,13 @@ package com.jollifiy.gameanalytics.service;
 import com.jollifiy.gameanalytics.dto.AnalyticsRequest;
 import com.jollifiy.gameanalytics.entity.Analytics;
 import com.jollifiy.gameanalytics.repository.AnalyticsRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 public class AnalyticsService {
 
@@ -18,6 +20,10 @@ public class AnalyticsService {
     }
 
     public Analytics saveEvent(AnalyticsRequest request) {
+        log.info("Analiz olayı alındı. Player ID: {}, Event: {}", request.getPlayerId(), request.getEventName());
+        log.debug("Olay detayları -> Level: {}, Score: {}, PlayTime: {}",
+                request.getLevel(), request.getScore(), request.getPlayTime());
+
         Analytics analytics = new Analytics();
         analytics.setPlayerId(request.getPlayerId());
         analytics.setEventName(request.getEventName());
@@ -30,10 +36,15 @@ public class AnalyticsService {
         analytics.setDeathReason(request.getDeathReason());
         analytics.setCreatedAt(LocalDateTime.now());
 
-        return analyticsRepository.save(analytics);
+        Analytics savedAnalytics = analyticsRepository.save(analytics);
+        log.info("Analiz olayı başarıyla kaydedildi. Record ID: {}", savedAnalytics.getId());
+        return savedAnalytics;
     }
 
     public List<Analytics> getAllEvents() {
-        return analyticsRepository.findAll();
+        log.debug("Tüm analiz olayları listeleniyor.");
+        List<Analytics> events = analyticsRepository.findAll();
+        log.info("Toplam {} adet analiz olayı getirildi.", events.size());
+        return events;
     }
 }
