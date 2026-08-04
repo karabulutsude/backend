@@ -27,30 +27,32 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Cihaz ID sistemde yoksa yeni oyuncu olusturulmali")
     void login_ShouldCreateNewPlayer_WhenDeviceDoesNotExist() {
-        // 1. GIVEN (Hazırlık)
+        // GIVEN
         String deviceId = "device-123";
         String country = "TR";
 
-        when(playerRepository.findByDeviceId(deviceId)).thenReturn(Optional.empty());
-        when(playerRepository.save(any(Player.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(playerRepository.findByDeviceId(deviceId))
+                .thenReturn(Optional.empty());
 
-        // 2. WHEN (Eylem)
+        when(playerRepository.save(any(Player.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // WHEN
         Player result = playerService.login(deviceId, country);
 
-        // 3. THEN (Kontroller / Verification)
+        // THEN
         assertNotNull(result, "Dönen oyuncu nesnesi null olmamalı");
         assertEquals(deviceId, result.getDeviceId(), "Cihaz ID eşleşmeli");
         assertEquals(country, result.getCountry(), "Ülke eşleşmeli");
         assertNotNull(result.getPlayerId(), "Yeni rastgele Player ID üretilmeli");
 
-        // Veritabanına kayıt metodunun tam 1 kez çağrıldığını kontrol ediyoruz
         verify(playerRepository, times(1)).save(any(Player.class));
     }
 
     @Test
     @DisplayName("Cihaz ID zaten varsa ve ulke degismediyse mevcut oyuncu donmeli")
     void login_ShouldReturnExistingPlayer_WhenDeviceExistsAndCountryUnchanged() {
-        // 1. GIVEN
+        // GIVEN
         String deviceId = "device-123";
         String country = "TR";
 
@@ -59,15 +61,45 @@ class PlayerServiceTest {
         existingPlayer.setDeviceId(deviceId);
         existingPlayer.setCountry(country);
 
-        when(playerRepository.findByDeviceId(deviceId)).thenReturn(Optional.of(existingPlayer));
+        when(playerRepository.findByDeviceId(deviceId))
+                .thenReturn(Optional.of(existingPlayer));
 
-        // 2. WHEN
+        // WHEN
         Player result = playerService.login(deviceId, country);
 
-        // 3. THEN
+        // THEN
         assertNotNull(result);
         assertEquals("existing-uuid-123", result.getPlayerId());
-        // Zaten var olan oyuncunun bilgisi değişmediği için save() metodu HİÇ çağrılmamalı:
+
         verify(playerRepository, never()).save(any(Player.class));
+    }
+
+    @Test
+    @DisplayName("Cihaz ID zaten varsa ve ulke degistiyse ulke guncellenip kaydedilmeli")
+    void login_ShouldUpdateCountyOfExistingPlayer_WhenDeviceExistsAndCountryChanged() {
+        // GIVEN
+        String deviceId = "device-123";
+        String newCountry = "US";
+
+        Player existingPlayer = new Player();
+        existingPlayer.setPlayerId("existing-uuid-123");
+        existingPlayer.setDeviceId(deviceId);
+        existingPlayer.setCountry("TR");
+
+        when(playerRepository.findByDeviceId(deviceId))
+                .thenReturn(Optional.of(existingPlayer));
+
+        when(playerRepository.save(any(Player.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // WHEN
+        Player result = playerService.login(deviceId, newCountry);
+
+        // THEN
+        assertNotNull(result);
+        assertEquals("existing-uuid-123", result.getPlayerId());
+        assertEquals(newCountry, result.getCountry(), "Ülke yeni gelen değerle güncellenmeli");
+
+        verify(playerRepository, times(1)).save(any(Player.class));
     }
 }

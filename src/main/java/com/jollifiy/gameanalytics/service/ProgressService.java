@@ -6,7 +6,6 @@ import com.jollifiy.gameanalytics.repository.ProgressRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Slf4j
@@ -26,19 +25,15 @@ public class ProgressService {
 
         Progress progress;
         int maxLevel = 3;
-
         int incomingCoins = (request.getTotalCoins() != null) ? request.getTotalCoins() : 0;
         int incomingLevel = (request.getCurrentLevel() != null) ? request.getCurrentLevel() : 1;
 
         if (existingProgress.isPresent()) {
             progress = existingProgress.get();
-            log.debug("Mevcut ilerleme kaydı bulundu. Player ID: {}, Mevcut Level: {}",
-                    request.getPlayerId(), progress.getCurrentLevel());
+            log.debug("Mevcut ilerleme kaydı bulundu. Player ID: {}", request.getPlayerId());
 
             if (incomingLevel > progress.getCurrentLevel()) {
                 int newLevel = Math.min(incomingLevel, maxLevel);
-                log.info("Oyuncunun seviyesi yükseltildi. Player ID: {}, Eski Level: {}, Yeni Level: {}",
-                        request.getPlayerId(), progress.getCurrentLevel(), newLevel);
                 progress.setCurrentLevel(newLevel);
             }
 
@@ -46,7 +41,6 @@ public class ProgressService {
             progress.setTotalCoins(currentCoinsInDb + incomingCoins);
 
         } else {
-            log.info("Oyuncu için ilk kez ilerleme kaydı oluşturuluyor. Player ID: {}", request.getPlayerId());
             progress = new Progress();
             progress.setPlayerId(request.getPlayerId());
 
@@ -55,21 +49,21 @@ public class ProgressService {
             progress.setTotalCoins(incomingCoins);
         }
 
-        progress.setUpdatedAt(LocalDateTime.now());
         Progress savedProgress = progressRepository.save(progress);
 
-        log.info("İlerleme kaydedildi. Player ID: {}, Güncel Level: {}, Toplam Coin: {}",
+        log.info("İlerleme başarıyla kaydedildi. Player ID: {}, Current Level: {}, Total Coins: {}",
                 savedProgress.getPlayerId(), savedProgress.getCurrentLevel(), savedProgress.getTotalCoins());
 
         return savedProgress;
     }
 
     public Progress getProgressByPlayerId(String playerId) {
-        log.debug("Oyuncu ilerleme bilgisi sorgulanıyor. Player ID: {}", playerId);
+        log.debug("Oyuncu ilerlemesi sorgulanıyor. Player ID: {}", playerId);
+
         Optional<Progress> progress = progressRepository.findByPlayerId(playerId);
 
         if (progress.isEmpty()) {
-            log.warn("Oyuncuya ait ilerleme kaydı bulunamadı! Player ID: {}", playerId);
+            log.warn("Oyuncuya ait ilerleme kaydı bulunamadı. Player ID: {}", playerId);
         }
 
         return progress.orElse(null);
