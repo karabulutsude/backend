@@ -14,13 +14,26 @@ import java.util.UUID;
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
+    private final ConfigService configService; //  Config servisi bağımlılığı eklendi
 
-    public PlayerService(PlayerRepository playerRepository) {
+
+    public PlayerService(PlayerRepository playerRepository, ConfigService configService) {
         this.playerRepository = playerRepository;
+        this.configService = configService; // bu kıskı eklediğm
     }
 
-    public Player login(String deviceId, String country) {
-        log.info("Oyuncu giriş isteği alındı. Device ID: {}, Ülke: {}", deviceId, country);
+    // Metoda clientVersion parametresi eklendi
+    public Player login(String deviceId, String country, String clientVersion) {
+        log.info("Oyuncu giriş isteği alındı. Device ID: {}, Ülke: {}, Sürüm: {}", deviceId, country, clientVersion); //log a version kısmını ekledim
+
+        // Versiyon Kontrolü (Force Update Kuralı)
+        boolean isSupported = configService.isVersionSupported(clientVersion);
+        if (!isSupported) {
+            log.warn("Desteklenmeyen sürüm ile giriş denemesi! Device ID: {}, Client Sürüm: {}", deviceId, clientVersion);
+            // Sürüm yetersizse hata fırlatılır (Unity tarafı bunu 'Force Update' olarak ele alacak)
+            throw new RuntimeException("FORCE_UPDATE_REQUIRED: Uygulamanız güncel değil, lütfen güncelleyin.");
+        }
+
         Optional<Player> existingPlayer = playerRepository.findByDeviceId(deviceId);
 
         if (existingPlayer.isPresent()) {

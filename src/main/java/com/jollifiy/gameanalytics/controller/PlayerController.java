@@ -19,7 +19,12 @@ public class PlayerController {
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
-        Player player = playerService.login(request.getDeviceId(), request.getCountry());
+        // request nesnesinden gelen clientVersion bilgisi service katmanına iletiliyor
+        Player player = playerService.login(
+                request.getDeviceId(),
+                request.getCountry(),
+                request.getClientVersion()
+        );
 
         LoginResponse response = new LoginResponse();
         response.setPlayerId(player.getPlayerId());
