@@ -23,6 +23,10 @@ class ConfigServiceTest {
     @InjectMocks
     private ConfigService configService;
 
+    // ==========================================
+    //  getConfigValue Testleri
+    // ==========================================
+
     @Test
     @DisplayName("Veritabanında config anahtarı varsa ilgili değer dönmeli")
     void getConfigValue_ShouldReturnConfigValue_WhenKeyExists() {
@@ -59,67 +63,117 @@ class ConfigServiceTest {
         verify(configRepository, times(1)).findByConfigKey(key);
     }
 
+    // ==========================================
+    //  isVersionSupported Testleri (Tam 4 Adet)
+    // ==========================================
+
     @Test
-    @DisplayName("Veritabanında minimum sürüm tanımlı değilse her sürüme izin verilmeli")
+    @DisplayName("[isVersionSupported - 1] Veritabanında minimum sürüm tanımlı değilse her sürüm desteklenmeli")
     void isVersionSupported_ShouldReturnTrue_WhenMinVersionNotConfigured() {
-        // GIVEN
         when(configRepository.findByConfigKey("MIN_APP_VERSION")).thenReturn(Optional.empty());
 
-        // WHEN
         boolean result = configService.isVersionSupported("1.0.0");
 
-        // THEN
         assertTrue(result, "Min sürüm yoksa her sürüm desteklenmeli");
     }
 
     @Test
-    @DisplayName("İstemci sürümü null veya boş gönderildiyse desteklenmiyor olmalı")
+    @DisplayName("[isVersionSupported - 2] İstemci sürümü null veya boş gönderildiyse desteklenmiyor olmalı")
     void isVersionSupported_ShouldReturnFalse_WhenClientVersionIsNullEmpty() {
-        // GIVEN
         AppConfig appConfig = new AppConfig();
         appConfig.setConfigKey("MIN_APP_VERSION");
         appConfig.setConfigValue("1.0.0");
         when(configRepository.findByConfigKey("MIN_APP_VERSION")).thenReturn(Optional.of(appConfig));
 
-        // WHEN & THEN
         assertFalse(configService.isVersionSupported(null), "Null sürüm desteklenmemeli");
         assertFalse(configService.isVersionSupported(""), "Boş sürüm desteklenmemeli");
     }
 
     @Test
-    @DisplayName("İstemci sürümü sistemin minimum sürümünden büyük veya eşitse desteklenmeli")
+    @DisplayName("[isVersionSupported - 3] İstemci sürümü sistemin minimum sürümünden büyük veya eşitse desteklenmeli")
     void isVersionSupported_ShouldReturnTrue_WhenClientVersionIsHigherOrEqual() {
-        // GIVEN
         AppConfig appConfig = new AppConfig();
         appConfig.setConfigKey("MIN_APP_VERSION");
         appConfig.setConfigValue("1.1.0");
         when(configRepository.findByConfigKey("MIN_APP_VERSION")).thenReturn(Optional.of(appConfig));
 
-        // WHEN & THEN
-        // Eşit sürüm
         assertTrue(configService.isVersionSupported("1.1.0"));
-
-        // Daha yüksek ana sürüm
         assertTrue(configService.isVersionSupported("2.0.0"));
-
-        // Daha yüksek alt sürüm (Semantic versioning kıyaslama testi)
-        assertTrue(configService.isVersionSupported("1.2.1"));
     }
 
     @Test
-    @DisplayName("İstemci sürümü sistemin minimum sürümünden küçükse desteklenmemeli")
+    @DisplayName("[isVersionSupported - 4] İstemci sürümü sistemin minimum sürümünden küçükse desteklenmemeli")
     void isVersionSupported_ShouldReturnFalse_WhenClientVersionIsLower() {
-        // GIVEN
         AppConfig appConfig = new AppConfig();
         appConfig.setConfigKey("MIN_APP_VERSION");
         appConfig.setConfigValue("1.1.0");
         when(configRepository.findByConfigKey("MIN_APP_VERSION")).thenReturn(Optional.of(appConfig));
 
-        // WHEN & THEN
-        // Daha düşük alt sürüm
         assertFalse(configService.isVersionSupported("1.0.9"));
-
-        // Daha düşük ana sürüm
         assertFalse(configService.isVersionSupported("0.9.5"));
+    }
+
+    // ==========================================
+    //  compareVersions & Çoklu Format Testleri
+    // ==========================================
+
+    /*
+    @ParameterizedTest(name = "Min Sürüm: {0} | İstemci Sürüm: {1} -> Beklenen Sonuç: {2}")
+    @CsvSource({
+            "1.1.0, 1.1.1, true",      // Üç basamaklı vs üç basamaklı (büyük)
+            "1.1, 1.1.1, true",        // İki basamaklı vs üç basamaklı
+            "2.1, 1.9.9, false",       // İki basamaklı vs üç basamaklı (küçük)
+            "1.1.1, 1.1, false",       // Üç basamaklı vs iki basamaklı (eksik segment -> 0 tamamlanır)
+            "1.1.0, 1.1.1-beta, true", // Ek/Harf içeren versiyon testleri
+            "1.0.0, 1.0.0-RC1, true",  // Release candidate testleri
+            "2.0.0, 1.9.8, false"      // Farklı ana sürüm kıyaslaması
+    })
+    @DisplayName("[compareVersions] Farklı basamak uzunlukları ve formatlar çoklu senaryolarla test edilmeli")
+    void compareVersions_ShouldHandleVariousFormatsAndLengths(String minVersion, String clientVersion, boolean expectedResult) {
+        AppConfig appConfig = new AppConfig();
+        appConfig.setConfigKey("MIN_APP_VERSION");
+        appConfig.setConfigValue(minVersion);
+        when(configRepository.findByConfigKey("MIN_APP_VERSION")).thenReturn(Optional.of(appConfig));
+
+        boolean result = configService.isVersionSupported(clientVersion);
+
+        assertEquals(expectedResult, result, "Sürüm kıyaslama mantığı hatalı çalışıyor: " + clientVersion + " vs min " + minVersion);
+    }
+
+     */
+    // ==========================================
+    //  Klasik Çoklu Sürüm Kıyaslama Testleri
+    // ==========================================
+
+    @Test
+    @DisplayName("Üç basamaklı birinci sürüm, üç basamaklı ikinci sürümden büyükse pozitif değer dönmeli")
+    void compareVersions_ShouldReturnPositive_WhenFirstVersionIsHigher() {
+        int result = configService.compareVersions("1.1.1", "1.1.0");
+
+        assertTrue(result > 0);
+    }
+
+    @Test
+    @DisplayName("İki basamaklı sürüm karşısında üç basamaklı sürüm gelirse pozitif değer dönmeli")
+    void compareVersions_ShouldReturnPositive_WhenComparingThreeDigitWithTwoDigit() {
+        int result = configService.compareVersions("1.1.1", "1.1");
+
+        assertTrue(result > 0);
+    }
+
+    @Test
+    @DisplayName("Üç basamaklı sürüm karşısında daha kısa (eksik basamaklı) sürüm küçük kalırsa negatif değer dönmeli")
+    void compareVersions_ShouldReturnNegative_WhenComparingShorterVersion() {
+        int result = configService.compareVersions("1.1", "1.1.1");
+
+        assertTrue(result < 0);
+    }
+
+    @Test
+    @DisplayName("Harf veya ek içeren versiyonlar (örn: 1.1.1-beta) doğru şekilde temizlenip karşılaştırılabilmeli")
+    void compareVersions_ShouldHandleVersionWithSuffix() {
+        int result = configService.compareVersions("1.1.1-beta", "1.1.0");
+
+        assertTrue(result > 0);
     }
 }

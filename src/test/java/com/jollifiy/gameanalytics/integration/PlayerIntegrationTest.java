@@ -2,7 +2,9 @@ package com.jollifiy.gameanalytics.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jollifiy.gameanalytics.dto.LoginRequest;
+import com.jollifiy.gameanalytics.entity.AppConfig;
 import com.jollifiy.gameanalytics.entity.Player;
+import com.jollifiy.gameanalytics.repository.ConfigRepository;
 import com.jollifiy.gameanalytics.repository.PlayerRepository;
 import com.jollifiy.gameanalytics.service.ConfigService;
 import com.jollifiy.gameanalytics.service.PlayerService;
@@ -17,18 +19,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -44,12 +45,15 @@ class PlayerIntegrationTest {
     @Autowired
     private PlayerRepository playerRepository;
 
-    // --- UNIT TESTLER İÇİN MOCK TANIMLARI ---
+    @Autowired
+    private ConfigRepository configRepository;
+
+    // --- BİRİM TESTLERİ İÇİN MOCK TANIMLARI ---
     @Mock
     private PlayerRepository playerServiceMockRepository;
 
     @Mock
-    private ConfigService configService; // <-- PlayerService bağımlılığı için eklendi
+    private ConfigService configService;
 
     @InjectMocks
     private PlayerService playerService;
@@ -57,6 +61,7 @@ class PlayerIntegrationTest {
     @BeforeEach
     void setUp() {
         playerRepository.deleteAll();
+        configRepository.deleteAll();
     }
 
     // ==========================================
@@ -66,18 +71,39 @@ class PlayerIntegrationTest {
     @Test
     @DisplayName("POST /player/login - Yeni cihaz ile giris yapildiginda oyuncu olusturulmali ve playerId donmeli")
     void shouldLoginOrCreatePlayer() throws Exception {
-        // Hazırlık: Giriş isteği DTO nesnesi oluşturulur
         LoginRequest request = new LoginRequest();
         request.setDeviceId("device-uuid-123");
         request.setCountry("TR");
-        request.setClientVersion("1.0.0"); // <-- Sürüm bilgisi eklendi
+        request.setClientVersion("1.0.0");
 
-        // Eylem & Doğrulama: /player/login adresine POST isteği simüle edilir
         mockMvc.perform(post("/player/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.playerId", is(notNullValue())));
+    }
+
+    @Test
+    @DisplayName("POST /player/login - Desteklenmeyen eski sürüm ile giris yapildiginda 400 Bad Request ve FORCE_UPDATE_REQUIRED dönmeli")
+    void shouldReturnBadRequestWhenVersionNotSupported() throws Exception {
+        AppConfig minVersionConfig = new AppConfig();
+        minVersionConfig.setConfigKey("MIN_APP_VERSION");
+        minVersionConfig.setConfigValue("1.0.0");
+        configRepository.save(minVersionConfig);
+
+        LoginRequest request = new LoginRequest();
+        request.setDeviceId("device-uuid-old");
+        request.setCountry("TR");
+        request.setClientVersion("0.5.0");
+
+        MvcResult result = mockMvc.perform(post("/player/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        assertTrue(responseBody.contains("FORCE_UPDATE_REQUIRED"));
     }
 
     // ==========================================
@@ -93,17 +119,14 @@ class PlayerIntegrationTest {
 
         when(configService.isVersionSupported(clientVersion)).thenReturn(true);
 
-        // Cihazın daha önce kayıtlı olmadığı durumu simüle edilir (Optional.empty)
         when(playerServiceMockRepository.findByDeviceId(deviceId))
                 .thenReturn(Optional.empty());
 
         when(playerServiceMockRepository.save(any(Player.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // WHEN: Servisin login metodu 3 parametre ile çağrılır
         Player result = playerService.login(deviceId, country, clientVersion);
 
-        // THEN: Yeni oyuncunun başarıyla oluşturulduğu doğrulanır
         assertNotNull(result, "Dönen oyuncu nesnesi null olmamalı");
         assertEquals(deviceId, result.getDeviceId(), "Cihaz ID eşleşmeli");
         assertEquals(country, result.getCountry(), "Ülke eşleşmeli");
@@ -122,7 +145,6 @@ class PlayerIntegrationTest {
 
         when(configService.isVersionSupported(clientVersion)).thenReturn(true);
 
-        // Zaten kayıtlı olan mevcut oyuncu nesnesi hazırlanır
         Player existingPlayer = new Player();
         existingPlayer.setPlayerId("existing-uuid-123");
         existingPlayer.setDeviceId(deviceId);
@@ -137,7 +159,6 @@ class PlayerIntegrationTest {
         assertEquals("existing-uuid-123", result.getPlayerId());
 
         verify(configService, times(1)).isVersionSupported(clientVersion);
-        // Ülke değişmediği için save metodunun hiç çağrılmamış olması gerekir
         verify(playerServiceMockRepository, never()).save(any(Player.class));
     }
 
@@ -168,7 +189,6 @@ class PlayerIntegrationTest {
         assertEquals(newCountry, result.getCountry(), "Ülke yeni gelen değerle güncellenmeli");
 
         verify(configService, times(1)).isVersionSupported(clientVersion);
-        // Ülke güncellendiği için save metodu 1 kez çağrılmalıdır
         verify(playerServiceMockRepository, times(1)).save(any(Player.class));
     }
 }
