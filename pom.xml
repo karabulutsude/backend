@@ -126,11 +126,14 @@
                 </configuration>
             </plugin>
 
-            <!-- Vaadin Maven Plugin (Frontend dosyalarını üretim modunda derlemek için güncellendi) -->
+            <!-- Vaadin Maven Plugin (PWA devre dışı bırakıldı, workbox-build hatası engellendi) -->
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
                 <version>${vaadin.version}</version>
+                <configuration>
+                    <pwa>false</pwa>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

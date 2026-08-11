@@ -24,6 +24,12 @@ jobs:
           java-version: '17'
           distribution: 'microsoft'
 
+      # EKLEMEMİZ GEREKEN KRİTİK ADIM: Vaadin frontend derlemesi için Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Build with Maven
         run: mvn clean install
 
@@ -36,13 +42,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-      
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
