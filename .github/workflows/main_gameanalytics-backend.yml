@@ -30,7 +30,11 @@ jobs:
         with:
           node-version: 20
 
-      # KRİTİK DEĞİŞİKLİK: -Pproduction parametresi kaldırıldı
+      # KRİTİK EKLEME: Eksik paketlerin (workbox vb.) sunucuda kurulması için bu şart!
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      # Build with Maven
       - name: Build with Maven
         run: mvn clean package
 
