@@ -14,8 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Optional;
 
@@ -23,18 +26,21 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Tüm Spring Boot uygulamasını test ortamında ayağa kaldırır
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class ProgressIntegrationTest {
 
     @Autowired
+    private WebApplicationContext context;
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -43,7 +49,6 @@ class ProgressIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // --- UNIT TESTLER İÇİN MOCK TANIMLARI ---
     @Mock
     private ProgressRepository progressServiceMockRepository;
 
@@ -52,24 +57,24 @@ class ProgressIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+
         progressRepository.deleteAll();
     }
 
-    // ==========================================
-    //  İNTEGRASYON TESTLERİ (MockMvc & H2 DB)
-    // ==========================================
-
     @Test
+    @WithMockUser
     @DisplayName("GET /progress/get - Kayitli ilerleme varsa basariyla donmeli")
     void shouldGetProgressByPlayerId() throws Exception {
-        // Hazırlık: Veritabanına doğrudan ilerleme kaydedilir
         Progress progress = new Progress();
         progress.setPlayerId("player-uuid-888");
         progress.setCurrentLevel(5);
         progress.setTotalCoins(9200);
         progressRepository.save(progress);
 
-        // Eylem & Doğrulama: GET isteği ile veri çekilir ve kontrol edilir
         mockMvc.perform(get("/progress/get")
                         .param("playerId", "player-uuid-888"))
                 .andExpect(status().isOk())
@@ -79,15 +84,16 @@ class ProgressIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     @DisplayName("GET /progress/get - Kayit bulunamazsa 404 NotFound donmeli")
     void shouldReturnNotFoundWhenProgressDoesNotExist() throws Exception {
-        // Olmayan bir oyuncu ID ile istek atıldığında 404 dönmesi beklenir
         mockMvc.perform(get("/progress/get")
                         .param("playerId", "non-existent-player"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser
     @DisplayName("POST /progress/save - Oyuncu ilerlemesi basariyla kaydedilmeli")
     void shouldSaveProgress() throws Exception {
         ProgressSaveRequest request = new ProgressSaveRequest();
@@ -97,16 +103,13 @@ class ProgressIntegrationTest {
 
         mockMvc.perform(post("/progress/save")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())) // <-- Eklendi
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.playerId", is("player-uuid-999")))
                 .andExpect(jsonPath("$.currentLevel", is(3)))
                 .andExpect(jsonPath("$.totalCoins", is(4500)));
     }
-
-    // ==========================================
-    //  BİRİM (UNIT) TESTLERİ (Mockito)
-    // ==========================================
 
     @Test
     @DisplayName("[Unit] Oyuncunun mevcut kaydi varsa ilerleme basariyla guncellenmeli")
@@ -123,7 +126,6 @@ class ProgressIntegrationTest {
 
         when(progressServiceMockRepository.findByPlayerId(playerId))
                 .thenReturn(Optional.of(existingProgress));
-
         when(progressServiceMockRepository.save(any(Progress.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -147,12 +149,11 @@ class ProgressIntegrationTest {
 
         ProgressSaveRequest request = new ProgressSaveRequest();
         request.setPlayerId(playerId);
-        request.setCurrentLevel(5); // Sınır testi (Max Level 3 olmalı)
-        request.setTotalCoins(50);  // Coin toplama testi (100 + 50 = 150 olmalı)
+        request.setCurrentLevel(5);
+        request.setTotalCoins(50);
 
         when(progressServiceMockRepository.findByPlayerId(playerId))
                 .thenReturn(Optional.of(existingProgress));
-
         when(progressServiceMockRepository.save(any(Progress.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -174,10 +175,8 @@ class ProgressIntegrationTest {
         request.setPlayerId(playerId);
         request.setCurrentLevel(1);
 
-        // Kayıt bulunamadı durumu simüle edilir
         when(progressServiceMockRepository.findByPlayerId(playerId))
                 .thenReturn(Optional.empty());
-
         when(progressServiceMockRepository.save(any(Progress.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

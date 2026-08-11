@@ -17,9 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Optional;
 
@@ -28,15 +31,19 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class PlayerIntegrationTest {
 
     @Autowired
+    private WebApplicationContext context;
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -48,7 +55,6 @@ class PlayerIntegrationTest {
     @Autowired
     private ConfigRepository configRepository;
 
-    // --- BİRİM TESTLERİ İÇİN MOCK TANIMLARI ---
     @Mock
     private PlayerRepository playerServiceMockRepository;
 
@@ -60,15 +66,17 @@ class PlayerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+
         playerRepository.deleteAll();
         configRepository.deleteAll();
     }
 
-    // ==========================================
-    //  İNTEGRASYON TESTLERİ (MockMvc & H2 DB)
-    // ==========================================
-
     @Test
+    @WithMockUser
     @DisplayName("POST /player/login - Yeni cihaz ile giris yapildiginda oyuncu olusturulmali ve playerId donmeli")
     void shouldLoginOrCreatePlayer() throws Exception {
         LoginRequest request = new LoginRequest();
@@ -78,12 +86,14 @@ class PlayerIntegrationTest {
 
         mockMvc.perform(post("/player/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())) // <-- Eklendi
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.playerId", is(notNullValue())));
     }
 
     @Test
+    @WithMockUser
     @DisplayName("POST /player/login - Desteklenmeyen eski sürüm ile giris yapildiginda 400 Bad Request ve FORCE_UPDATE_REQUIRED dönmeli")
     void shouldReturnBadRequestWhenVersionNotSupported() throws Exception {
         AppConfig minVersionConfig = new AppConfig();
@@ -98,17 +108,14 @@ class PlayerIntegrationTest {
 
         MvcResult result = mockMvc.perform(post("/player/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(csrf())) // <-- Eklendi
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
         assertTrue(responseBody.contains("FORCE_UPDATE_REQUIRED"));
     }
-
-    // ==========================================
-    //  BİRİM (UNIT) TESTLERİ (Mockito)
-    // ==========================================
 
     @Test
     @DisplayName("[Unit] Cihaz ID sistemde yoksa yeni oyuncu olusturulmali")
@@ -118,10 +125,8 @@ class PlayerIntegrationTest {
         String clientVersion = "1.0.0";
 
         when(configService.isVersionSupported(clientVersion)).thenReturn(true);
-
         when(playerServiceMockRepository.findByDeviceId(deviceId))
                 .thenReturn(Optional.empty());
-
         when(playerServiceMockRepository.save(any(Player.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -178,7 +183,6 @@ class PlayerIntegrationTest {
 
         when(playerServiceMockRepository.findByDeviceId(deviceId))
                 .thenReturn(Optional.of(existingPlayer));
-
         when(playerServiceMockRepository.save(any(Player.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 

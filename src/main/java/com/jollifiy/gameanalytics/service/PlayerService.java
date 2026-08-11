@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +24,24 @@ public class PlayerService {
         this.configService = configService;
     }
 
+    // Vaadin tablosu için tüm oyuncuları listeleyen metot
+    public List<Player> findAll() {
+        return playerRepository.findAll();
+    }
+
+    // Vaadin için oyuncu kaydetme / güncelleme metodu
+    public Player save(Player player) {
+        if (player.getPlayerId() == null || player.getPlayerId().isEmpty()) {
+            player.setPlayerId(UUID.randomUUID().toString());
+        }
+        return playerRepository.save(player);
+    }
+
+    // Vaadin için oyuncu silme metodu
+    public void delete(Player player) {
+        playerRepository.delete(player);
+    }
+
     public Player login(String deviceId, String country, String clientVersion) {
         log.info("Oyuncu giriş isteği alındı. Device ID: {}, Ülke: {}, Sürüm: {}", deviceId, country, clientVersion);
 
@@ -30,7 +49,6 @@ public class PlayerService {
         boolean isSupported = configService.isVersionSupported(clientVersion);
         if (!isSupported) {
             log.warn("Desteklenmeyen sürüm ile giriş denemesi! Device ID: {}, Client Sürüm: {}", deviceId, clientVersion);
-            // Unity tarafının 400 Bad Request alabilmesi ve paneli açabilmesi için ResponseStatusException fırlatılıyor
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "FORCE_UPDATE_REQUIRED: Uygulamanız güncel değil, lütfen güncelleyin."

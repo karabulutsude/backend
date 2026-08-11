@@ -5,6 +5,7 @@ import com.jollifiy.gameanalytics.repository.ConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -13,12 +14,27 @@ public class ConfigService {
     @Autowired
     private ConfigRepository configRepository;
 
+    // Vaadin tablosu için tüm konfigürasyonları listeleyen metot
+    public List<AppConfig> findAll() {
+        return configRepository.findAll();
+    }
+
+    // Vaadin arayüzü için konfigürasyon kaydetme / güncelleme
+    public AppConfig save(AppConfig appConfig) {
+        return configRepository.save(appConfig);
+    }
+
+    // Vaadin arayüzü için konfigürasyon silme
+    public void delete(AppConfig appConfig) {
+        configRepository.delete(appConfig);
+    }
+
     public String getConfigValue(String key) {
         Optional<AppConfig> config = configRepository.findByConfigKey(key);
         return config.map(AppConfig::getConfigValue).orElse(null);
     }
 
-    public boolean isVersionSupported(String clientVersion) {  // 4 test
+    public boolean isVersionSupported(String clientVersion) {
         String minVersion = getConfigValue("MIN_APP_VERSION");
 
         if (minVersion == null || minVersion.isEmpty()) {
@@ -32,7 +48,7 @@ public class ConfigService {
         return compareVersions(clientVersion, minVersion) >= 0;
     }
 
-    int compareVersions(String v1, String v2) {  // private kaldırıldı, test edilebilir hale geldi
+    int compareVersions(String v1, String v2) {
         String[] parts1 = v1.split("\\.");
         String[] parts2 = v2.split("\\.");
 

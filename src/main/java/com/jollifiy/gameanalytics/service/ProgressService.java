@@ -6,6 +6,7 @@ import com.jollifiy.gameanalytics.repository.ProgressRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -16,6 +17,22 @@ public class ProgressService {
 
     public ProgressService(ProgressRepository progressRepository) {
         this.progressRepository = progressRepository;
+    }
+
+    // Vaadin tablosu için tüm ilerleme kayıtlarını listeleyen metot
+    public List<Progress> findAll() {
+        return progressRepository.findAll();
+    }
+
+    // Vaadin arayüzü için doğrudan entity kaydetme / güncelleme
+    public Progress save(Progress progress) {
+        return progressRepository.save(progress);
+    }
+
+    // Vaadin arayüzü için ilerleme kaydı silme
+    public void delete(Progress progress) {
+        progressRepository.delete(progress);
+        log.info("İlerleme kaydı silindi. ID: {}", progress.getId());
     }
 
     public Progress saveProgress(ProgressSaveRequest request) {

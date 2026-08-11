@@ -30,6 +30,13 @@ public class Player {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    // Yeni oyuncu eklerken kullanacağımız constructor
+    public Player(String playerId, String deviceId, String country) {
+        this.playerId = playerId;
+        this.deviceId = deviceId;
+        this.country = country;
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

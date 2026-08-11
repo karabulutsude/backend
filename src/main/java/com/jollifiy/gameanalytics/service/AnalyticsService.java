@@ -18,6 +18,17 @@ public class AnalyticsService {
         this.analyticsRepository = analyticsRepository;
     }
 
+    // Vaadin arayüzü için doğrudan entity kaydetme / güncelleme
+    public Analytics save(Analytics analytics) {
+        return analyticsRepository.save(analytics);
+    }
+
+    // Vaadin arayüzü için kayıt silme
+    public void delete(Analytics analytics) {
+        analyticsRepository.delete(analytics);
+        log.info("Analiz kaydı silindi. ID: {}", analytics.getId());
+    }
+
     public Analytics saveEvent(AnalyticsRequest request) {
         log.info("Analiz olayı alındı. Player ID: {}, Event: {}", request.getPlayerId(), request.getEventName());
         log.debug("Olay detayları: PlayerID={}, Event={}, Level={}, Score={}",
