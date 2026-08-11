@@ -24,14 +24,15 @@ jobs:
           java-version: '17'
           distribution: 'microsoft'
 
-      # EKLEMEMİZ GEREKEN KRİTİK ADIM: Vaadin frontend derlemesi için Node.js
+      # Vaadin frontend derlemesi için Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # KRİTİK DEĞİŞİKLİK: -Pproduction parametresi eklendi
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean package -Pproduction
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
