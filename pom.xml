@@ -126,7 +126,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Vaadin Maven Plugin (PWA devre dışı bırakıldı) -->
+            <!-- Vaadin Maven Plugin -->
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
