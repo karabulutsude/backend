@@ -35,3 +35,6 @@ build/
 ### Logs ###
 logs/
 *.log
+
+/src/main/frontend/generated/
+/src/main/bundles/
