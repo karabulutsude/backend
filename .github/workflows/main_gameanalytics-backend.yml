@@ -26,15 +26,16 @@ jobs:
         with:
           node-version: 20
 
-      # Dosyayı düzeltmeye çalışma, doğrudan kökten sil.
-      # Vaadin build sırasında bunu zaten kendisi yeniden oluşturur.
-      - name: Delete Problematic Files
-        run: |
-          rm -f vite.generated.ts
-          npm cache clean --force
-
       - name: Install Frontend Dependencies
         run: npm install
+
+      # VAADIN'IN ÜRETTİĞİ DOSYADAKİ WORKBOX HATASINI TEMİZLE
+      - name: Patch Generated Vite File
+        run: |
+          if [ -f "vite.generated.ts" ]; then
+            sed -i '/workbox-build/d' vite.generated.ts
+            echo "Successfully removed workbox-build from vite.generated.ts"
+          fi
 
       # Build with Maven
       - name: Build with Maven
