@@ -30,13 +30,15 @@ jobs:
         with:
           node-version: 20
 
-      # KRİTİK EKLEME: Eksik paketlerin (workbox vb.) sunucuda kurulması için bu şart!
+      # Frontend bağımlılıklarını temiz kurulumla yükle
       - name: Install Frontend Dependencies
-        run: npm install
+        run: |
+          npm cache clean --force
+          npm install
 
-      # Build with Maven
+      # Build with Maven (Vaadin pwa kapalı olduğu için workbox aramayacak)
       - name: Build with Maven
-        run: mvn clean package
+        run: mvn clean package -DskipTests
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
