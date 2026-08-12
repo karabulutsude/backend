@@ -6,6 +6,8 @@ import com.jollifiy.gameanalytics.service.ProgressService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/progress")
@@ -15,6 +17,11 @@ public class ProgressController {
 
     public ProgressController(ProgressService progressService) {
         this.progressService = progressService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Progress>> getAllProgress() {
+        return ResponseEntity.ok(progressService.findAll());
     }
 
     @GetMapping("/get")

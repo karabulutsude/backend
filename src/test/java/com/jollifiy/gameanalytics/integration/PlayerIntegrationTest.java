@@ -77,24 +77,25 @@ class PlayerIntegrationTest {
 
     @Test
     @WithMockUser
-    @DisplayName("POST /player/login - Yeni cihaz ile giris yapildiginda oyuncu olusturulmali ve playerId donmeli")
+    @DisplayName("POST /players/login - Yeni cihaz ile giris yapildiginda oyuncu olusturulmali ve playerId donmeli")
     void shouldLoginOrCreatePlayer() throws Exception {
         LoginRequest request = new LoginRequest();
         request.setDeviceId("device-uuid-123");
         request.setCountry("TR");
         request.setClientVersion("1.0.0");
 
-        mockMvc.perform(post("/player/login")
+        // URL /player/login yerine /players/login olarak güncellendi
+        mockMvc.perform(post("/players/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                        .with(csrf())) // <-- Eklendi
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.playerId", is(notNullValue())));
     }
 
     @Test
     @WithMockUser
-    @DisplayName("POST /player/login - Desteklenmeyen eski sürüm ile giris yapildiginda 400 Bad Request ve FORCE_UPDATE_REQUIRED dönmeli")
+    @DisplayName("POST /players/login - Desteklenmeyen eski sürüm ile giris yapildiginda 400 Bad Request ve FORCE_UPDATE_REQUIRED dönmeli")
     void shouldReturnBadRequestWhenVersionNotSupported() throws Exception {
         AppConfig minVersionConfig = new AppConfig();
         minVersionConfig.setConfigKey("MIN_APP_VERSION");
@@ -106,10 +107,11 @@ class PlayerIntegrationTest {
         request.setCountry("TR");
         request.setClientVersion("0.5.0");
 
-        MvcResult result = mockMvc.perform(post("/player/login")
+        // URL /player/login yerine /players/login olarak güncellendi
+        MvcResult result = mockMvc.perform(post("/players/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                        .with(csrf())) // <-- Eklendi
+                        .with(csrf()))
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
