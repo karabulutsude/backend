@@ -36,7 +36,15 @@ jobs:
           npm cache clean --force
           npm install
 
-      # Build with Maven (Vaadin pwa kapalı olduğu için workbox aramayacak)
+      # Sorunlu workbox-build importunu temizle
+      - name: Fix Vite Generated PWA Import
+        run: |
+          if [ -f "vite.generated.ts" ]; then
+            sed -i '/workbox-build/d' vite.generated.ts
+            echo "vite.generated.ts cleaned successfully."
+          fi
+
+      # Build with Maven
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
