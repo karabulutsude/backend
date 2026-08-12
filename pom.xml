@@ -131,6 +131,9 @@
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
                 <version>${vaadin.version}</version>
+                <configuration>
+                    <generatePwa>false</generatePwa>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
