@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy JAR app to Azure Web App - gameanalytics-backend
 
 on:
@@ -13,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -24,25 +21,20 @@ jobs:
           java-version: '17'
           distribution: 'microsoft'
 
-      # Vaadin frontend derlemesi için Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # Frontend bağımlılıklarını temiz kurulumla yükle
-      - name: Install Frontend Dependencies
+      # Dosyayı düzeltmeye çalışma, doğrudan kökten sil.
+      # Vaadin build sırasında bunu zaten kendisi yeniden oluşturur.
+      - name: Delete Problematic Files
         run: |
+          rm -f vite.generated.ts
           npm cache clean --force
-          npm install
 
-      # Sorunlu workbox-build importunu temizle
-      - name: Fix Vite Generated PWA Import
-        run: |
-          if [ -f "vite.generated.ts" ]; then
-            sed -i '/workbox-build/d' vite.generated.ts
-            echo "vite.generated.ts cleaned successfully."
-          fi
+      - name: Install Frontend Dependencies
+        run: npm install
 
       # Build with Maven
       - name: Build with Maven
@@ -57,7 +49,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
