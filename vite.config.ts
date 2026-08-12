@@ -5,16 +5,13 @@ export default defineConfig((env) => {
     const baseConfig = overrideVaadinConfig(env);
     return {
         ...baseConfig,
+        optimizeDeps: {
+            ...baseConfig.optimizeDeps,
+            exclude: [...(baseConfig.optimizeDeps?.exclude || []), 'workbox-build'],
+        },
         ssr: {
             ...baseConfig.ssr,
-            external: ['workbox-build'],
-        },
-        build: {
-            ...baseConfig.build,
-            rollupOptions: {
-                ...baseConfig.build?.rollupOptions,
-                external: ['workbox-build'],
-            },
+            external: [...(baseConfig.ssr?.external || []), 'workbox-build'],
         },
     };
 });
