@@ -19,7 +19,10 @@
     "lit": "3.2.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "6.28.0"
+    "react-router-dom": "6.28.0",
+    "workbox-build": "7.3.0",
+    "workbox-core": "7.3.0",
+    "workbox-precaching": "7.3.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.26.3",
@@ -37,10 +40,7 @@
     "transform-ast": "2.4.4",
     "typescript": "5.7.2",
     "vite": "6.0.3",
-    "vite-plugin-checker": "0.8.0",
-    "workbox-build": "7.3.0",
-    "workbox-core": "7.3.0",
-    "workbox-precaching": "7.3.0"
+    "vite-plugin-checker": "0.8.0"
   },
   "vaadin": {
     "dependencies": {
@@ -60,7 +60,10 @@
       "lit": "3.2.1",
       "react": "18.3.1",
       "react-dom": "18.3.1",
-      "react-router-dom": "6.28.0"
+      "react-router-dom": "6.28.0",
+      "workbox-build": "7.3.0",
+      "workbox-core": "7.3.0",
+      "workbox-precaching": "7.3.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.26.3",
@@ -78,10 +81,7 @@
       "transform-ast": "2.4.4",
       "typescript": "5.7.2",
       "vite": "6.0.3",
-      "vite-plugin-checker": "0.8.0",
-      "workbox-build": "7.3.0",
-      "workbox-core": "7.3.0",
-      "workbox-precaching": "7.3.0"
+      "vite-plugin-checker": "0.8.0"
     },
     "hash": "f6a9e0bed8c411d70f6e935ae8e2d6950ad740d3babba44078c251cc6ad70cfe"
   },
