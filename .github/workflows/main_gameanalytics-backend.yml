@@ -27,7 +27,9 @@ jobs:
           node-version: 20
 
       - name: Install Frontend Dependencies
-        run: npm install
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
       # VAADIN'IN ÜRETTİĞİ DOSYADAKİ WORKBOX HATASINI TEMİZLE
       - name: Patch Generated Vite File
